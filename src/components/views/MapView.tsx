@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 import { motion } from 'motion/react';
 
 export function MapView() {
-  const { emergency } = useMeshStore();
+  const { emergency, myLocation, peers } = useMeshStore();
 
   return (
     <div className="flex flex-col h-full relative pt-10">
@@ -31,7 +31,7 @@ export function MapView() {
         emergency.isActive ? "bg-[#FF4D00]/5" : "bg-transparent"
       )}>
         {/* Abstract Floor Plan SVG */}
-        <svg viewBox="0 0 400 600" className="w-full max-w-[400px] h-full max-h-[600px] text-white/20">
+        <svg viewBox="0 0 400 600" className="w-full max-w-[400px] h-full max-h-[600px] text-white/20 transition-all duration-300">
           <g transform="translate(40, 40)">
             {/* Outer walls */}
             <rect x="0" y="0" width="320" height="520" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -58,11 +58,19 @@ export function MapView() {
                <text x="20" y="25" textAnchor="middle" className="text-[8px] fill-white tracking-[0.2em]">EXIT_S</text>
             </g>
 
+            {/* Peers */}
+            {peers.map((peer) => (
+              <g key={peer.id} transform={`translate(${peer.location.x}, ${peer.location.y})`} className="transition-all duration-500">
+                <circle cx="0" cy="0" r="4" className={cn(peer.role === 'staff' ? "fill-blue-500" : "fill-white/40")} />
+                <text x="10" y="3" textAnchor="start" className="text-[8px] fill-white/40 tracking-[0.1em]">{peer.id}</text>
+              </g>
+            ))}
+
             {/* User Location */}
-            <g transform="translate(70, 420)">
-              <circle cx="0" cy="0" r="6" className="fill-white" />
-              <circle cx="0" cy="0" r="14" className="stroke-white fill-none animate-ping" />
-              <text x="15" y="3" textAnchor="start" className="text-[8px] fill-white tracking-[0.2em]">YOU</text>
+            <g transform={`translate(${myLocation.x}, ${myLocation.y})`} className="transition-all duration-300">
+              <circle cx="0" cy="0" r="6" className={cn(emergency.isActive ? "fill-[#FF4D00]" : "fill-white")} />
+              <circle cx="0" cy="0" r="14" className={cn("fill-none animate-ping", emergency.isActive ? "stroke-[#FF4D00]" : "stroke-white")} />
+              <text x="15" y="3" textAnchor="start" className={cn("text-[8px] tracking-[0.2em]", emergency.isActive ? "fill-[#FF4D00]" : "fill-white")}>YOU</text>
             </g>
 
             {/* Emergency UI Overlay inside Map */}
@@ -78,7 +86,7 @@ export function MapView() {
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  d="M70 420 v-80 h90 v180" 
+                  d={`M${myLocation.x} ${myLocation.y} L160 520`} 
                   fill="none" 
                   stroke="#ffffff" 
                   strokeWidth="3" 

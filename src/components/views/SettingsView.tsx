@@ -3,7 +3,7 @@ import { useMeshStore, Role } from '../../store/useMeshStore';
 import { cn } from '../../lib/utils';
 
 export function SettingsView() {
-  const { role, setRole, networkMode, setNetworkMode, deviceId, connectedPeers } = useMeshStore();
+  const { role, setRole, networkMode, setNetworkMode, deviceId, peers } = useMeshStore();
 
   return (
     <div className="flex flex-col h-full relative pt-10">
@@ -84,7 +84,7 @@ export function SettingsView() {
             </div>
             <div className="flex flex-col border-b border-white/5 pb-4">
               <span className="text-[10px] uppercase tracking-[0.1em] text-white/40 mb-1">Peers Connected</span>
-              <span className="text-white">{connectedPeers}</span>
+              <span className="text-white">{peers.length}</span>
             </div>
             <div className="flex flex-col border-b border-white/5 pb-4">
               <span className="text-[10px] uppercase tracking-[0.1em] text-white/40 mb-1">Encryption</span>

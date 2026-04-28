@@ -12,6 +12,12 @@ export interface Message {
   isMeshRelay?: boolean;
 }
 
+export interface Peer {
+  id: string;
+  role: Role;
+  location: { x: number; y: number };
+}
+
 export interface EmergencyState {
   isActive: boolean;
   type: IncidentType;
@@ -25,11 +31,16 @@ interface MeshStore {
   deviceId: string;
   role: Role;
   setRole: (role: Role) => void;
+  myLocation: { x: number; y: number };
+  setMyLocation: (loc: { x: number; y: number }) => void;
   
   // Network State
   networkMode: 'online' | 'mesh-only';
   setNetworkMode: (mode: 'online' | 'mesh-only') => void;
-  connectedPeers: number;
+  
+  peers: Peer[];
+  addPeer: (peer: Peer) => void;
+  removePeer: (id: string) => void;
   
   // Emergency State
   emergency: EmergencyState;
@@ -38,12 +49,14 @@ interface MeshStore {
   
   // Communication
   messages: Message[];
-  addMessage: (text: string) => void;
-  receiveMeshMessage: (message: Message) => void;
+  addMessage: (text: string, senderId?: string, senderRole?: Role) => void;
+  clearMessages: () => void;
   
   // Simulation Controls
-  simulatePeerDisconnection: () => void;
-  simulatePeerConnection: () => void;
+  simulationState: 'idle' | 'running' | 'completed';
+  simulationPhase: string;
+  setSimulationState: (state: 'idle' | 'running' | 'completed', phase?: string) => void;
+  resetState: () => void;
 }
 
 export const useMeshStore = create<MeshStore>((set, get) => ({
@@ -51,10 +64,15 @@ export const useMeshStore = create<MeshStore>((set, get) => ({
   role: 'guest',
   setRole: (role) => set({ role }),
   
+  myLocation: { x: 70, y: 420 },
+  setMyLocation: (myLocation) => set({ myLocation }),
+  
   networkMode: 'online',
   setNetworkMode: (mode) => set({ networkMode: mode }),
   
-  connectedPeers: 0,
+  peers: [],
+  addPeer: (peer) => set((state) => ({ peers: [...state.peers, peer] })),
+  removePeer: (id) => set((state) => ({ peers: state.peers.filter(p => p.id !== id) })),
   
   emergency: {
     isActive: false,
@@ -85,21 +103,36 @@ export const useMeshStore = create<MeshStore>((set, get) => ({
   }),
   
   messages: [],
-  addMessage: (text) => set((state) => {
+  addMessage: (text, overrideId, overrideRole) => set((state) => {
     const newMessage: Message = {
       id: Math.random().toString(36).substring(2, 9),
-      senderId: state.deviceId,
-      senderRole: state.role,
+      senderId: overrideId || state.deviceId,
+      senderRole: overrideRole || state.role,
       text,
       timestamp: Date.now(),
+      isMeshRelay: !!overrideId,
     };
     return { messages: [...state.messages, newMessage] };
   }),
+  clearMessages: () => set({ messages: [] }),
   
-  receiveMeshMessage: (message) => set((state) => ({
-    messages: [...state.messages, message]
-  })),
+  simulationState: 'idle',
+  simulationPhase: '',
+  setSimulationState: (state, phase = '') => set({ simulationState: state, simulationPhase: phase }),
   
-  simulatePeerConnection: () => set((state) => ({ connectedPeers: state.connectedPeers + 1 })),
-  simulatePeerDisconnection: () => set((state) => ({ connectedPeers: Math.max(0, state.connectedPeers - 1) })),
+  resetState: () => set((state) => ({
+    networkMode: 'online',
+    peers: [],
+    messages: [],
+    myLocation: { x: 70, y: 420 },
+    emergency: {
+      isActive: false,
+      type: null,
+      location: null,
+      confidence: 0,
+      reportedAt: null,
+    },
+    simulationState: 'idle',
+    simulationPhase: '',
+  }))
 }));

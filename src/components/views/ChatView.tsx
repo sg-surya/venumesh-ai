@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMeshStore } from '../../store/useMeshStore';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function ChatView() {
-  const { messages, addMessage, deviceId, role, connectedPeers } = useMeshStore();
+  const { messages, addMessage, deviceId, role, peers } = useMeshStore();
   const [text, setText] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,6 +14,12 @@ export function ChatView() {
     addMessage(text.trim());
     setText('');
   };
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-full relative pt-10">
@@ -29,7 +36,7 @@ export function ChatView() {
         <div className="flex flex-col items-end">
           <span className="text-[10px] uppercase tracking-[0.1em] text-white/40 mb-1">Status</span>
           <div className="flex items-center gap-2 text-[#FF4D00] text-[12px] uppercase font-bold tracking-[0.1em]">
-            {connectedPeers} Nodes Active
+            {peers.length} Nodes Active
           </div>
         </div>
       </div>
@@ -77,6 +84,7 @@ export function ChatView() {
             })
           )}
         </AnimatePresence>
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}

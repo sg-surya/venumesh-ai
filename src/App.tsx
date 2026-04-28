@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useMeshStore } from './store/useMeshStore';
 import { Radio } from 'lucide-react';
 import { DashboardView } from './components/views/DashboardView';
@@ -7,21 +7,13 @@ import { ChatView } from './components/views/ChatView';
 import { SettingsView } from './components/views/SettingsView';
 import { cn } from './lib/utils';
 import { useAudioDetection } from './hooks/useAudioDetection';
+import { useSimulation } from './hooks/useSimulation';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'map' | 'chat' | 'settings'>('dashboard');
-  const { emergency, networkMode, simulatePeerConnection } = useMeshStore();
+  const { emergency, networkMode, simulationState, simulationPhase } = useMeshStore();
   const { start, stop, isDetecting, level } = useAudioDetection();
-
-  // Simulate finding peers over time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7 && useMeshStore.getState().connectedPeers < 25) {
-        simulatePeerConnection();
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const { startSimulation, stopSimulation } = useSimulation();
 
   return (
     <div className={cn(
@@ -29,23 +21,49 @@ export default function App() {
       emergency.isActive ? "bg-[#0a0000] text-white" : "bg-[#050505] text-white"
     )}>
       {/* Network Status Header */}
-      <header className="px-10 py-10 flex items-center justify-between text-[11px] font-semibold tracking-[0.2em] uppercase shrink-0 z-10 w-full max-w-5xl mx-auto">
-        <div className="flex flex-col gap-2">
-          <span>VenueMesh AI / System</span>
-          <div className="flex items-center gap-2">
-            <Radio size={12} className={networkMode === 'mesh-only' ? 'animate-pulse text-[#FF4D00]' : 'text-white/40'} />
-            <span className={networkMode === 'online' ? "text-white/40" : "text-[#FF4D00]"}>
-              {networkMode === 'online' ? 'Global Network Connected' : 'Mesh Network (Offline-First)'}
-            </span>
+      <header className="px-6 md:px-10 py-8 flex flex-col gap-6 text-[11px] font-semibold tracking-[0.2em] uppercase shrink-0 z-10 w-full max-w-5xl mx-auto">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-6">
+          <div className="flex flex-col gap-2">
+            <span className="text-white/60">VenueMesh AI / System</span>
+            <div className="flex items-center gap-2">
+              <Radio size={12} className={networkMode === 'mesh-only' ? 'animate-pulse text-[#FF4D00]' : 'text-white/40'} />
+              <span className={networkMode === 'online' ? "text-white/40" : "text-[#FF4D00]"}>
+                {networkMode === 'online' ? 'Global Network Connected' : 'Mesh Network (Offline-First)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2">
+            {simulationState === 'idle' || simulationState === 'completed' ? (
+              <button onClick={startSimulation} className="bg-[#FF4D00] text-[#050505] text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2 hover:bg-white transition-colors">
+                Run Demo Scenario
+              </button>
+            ) : (
+              <button onClick={stopSimulation} className="border border-white/20 text-white text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2 hover:bg-white/10 transition-colors">
+                Stop Demo
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2 items-start md:items-end text-white/40">
+            <span>Active Nodes</span>
+            <div className="flex items-center gap-2">
+              <span className="text-white text-sm font-bold">ALL_{useMeshStore((s) => s.peers.length)}</span>
+              <div className={cn("w-1.5 h-1.5 rounded-full", networkMode === 'online' ? "bg-white/40" : "bg-[#FF4D00]")} />
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-2 items-end text-white/40">
-          <span>Active Nodes</span>
-          <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-bold">ALL_{useMeshStore((s) => s.connectedPeers)}</span>
-            <div className={cn("w-1.5 h-1.5 rounded-full", networkMode === 'online' ? "bg-white/40" : "bg-[#FF4D00]")} />
-          </div>
-        </div>
+        
+        {/* Active Simulation Banner */}
+        {simulationState === 'running' && (
+           <div className="w-full bg-[#FF4D00]/10 border border-[#FF4D00]/30 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-2 h-2 bg-[#FF4D00] rounded-full animate-ping" />
+                 <span className="text-[#FF4D00] font-bold">{simulationPhase}</span>
+              </div>
+              <span className="text-white/50 text-[10px]">DEMO MODE</span>
+           </div>
+        )}
       </header>
 
       {/* Main Content Area */}
