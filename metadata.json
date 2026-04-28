@@ -1,0 +1,8 @@
+{
+  "name": "VenueMesh AI Demo",
+  "description": "Offline-first emergency coordination prototype",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
